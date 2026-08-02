@@ -422,6 +422,8 @@ jobs:
       - name: 🔨 Build Kernel
         id: build
         uses: freeza-inc/OnePlus_KSUN_SUSFS_v1/.github/actions@main
+        env:
+          OP_OPT: 'true'
         with:
           op_config_json: ${{ steps.prepare_config.outputs.config_json }}
           ksu_type: ${{ matrix.ksu_type }}
