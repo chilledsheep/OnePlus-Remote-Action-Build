@@ -119,9 +119,13 @@ jobs:
           fi
 
           echo "$filtered" | jq '.' > matrix.json
-          
-          # For each device + each ksu option → one combined entry
-          merged_matrix=$(jq -n --argjson devices "$filtered" --argjson ksu_list "$ksu_options_normalized" '[ $devices[] as $dev | $ksu_list[] as $ksu | ($dev + {ksu_type: $ksu.type, ksu_hash: $ksu.hash}) ]')
+          echo "$ksu_options_normalized" > ksu_temp.json
+
+          merged_matrix=$(jq -n \
+            --slurpfile devices matrix.json \
+            --slurpfile ksu_list ksu_temp.json \
+            '[ $devices[0][] as $dev | $ksu_list[0][] as $ksu | ($dev + {ksu_type: $ksu.type, ksu_hash: $ksu.hash}) ]')
+          rm ksu_temp.json
           
           final_count=$(echo "$merged_matrix" | jq -s length)
           
@@ -256,9 +260,12 @@ jobs:
             --arg susfs_resolved "$susfs_resolved" \
             'map(.susfs_resolved_hash = $susfs_resolved)')
           
+          echo "$merged_matrix" > final_matrix_temp.json
+
           # Recalculate wrapped with updated matrix and write output
-          wrapped=$(jq -n --argjson items "$merged_matrix" '{ include: $items }')
+          wrapped=$(jq --slurp '{ include: .[] }' final_matrix_temp.json)
           echo "matrix=$(jq -c . <<< "$wrapped")" >> "$GITHUB_OUTPUT"
+          rm final_matrix_temp.json
           
           echo "::endgroup::"
 
